@@ -1,0 +1,113 @@
+# EigenGuard Nexus — Hybrid B2G Command Center
+# ─────────────────────────────────────────────
+# Stack:
+#   postgres   — PostgreSQL 16 (data)
+#   redis      — cache + future pub/sub for multi-worker WS
+#   backend    — FastAPI 0.115 + SQLAlchemy 2.x async (pure REST + WebSocket)
+#   frontend   — Vue 3 SPA built with Vite, served by nginx (proxies /api → backend)
+#
+# Deployment scenarios:
+#   1) CLOUD       — bizning serverda, subdomain bo'yicha multi-tenant
+#   2) ON-PREMISE  — mijoz serverida, periodik license validation
+#   3) AIR-GAPPED  — yopiq tarmoq, Ed25519 sertifikat bilan offline validation
+#
+# Use:
+#   docker compose up -d                 → barcha asosiy servislar
+#   docker compose exec backend python -m scripts.seed   → superadmin + demo tenant
+#   open http://localhost:8080           → SPA login
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nexus}
+      POSTGRES_USER: ${POSTGRES_USER:-nexus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_dev_only}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks: [nexus_internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexus} -d ${POSTGRES_DB:-nexus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks: [nexus_internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexus_backend
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-CHANGE_ME_dev_only}@postgres:5432/${POSTGRES_DB:-nexus}
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-cloud}
+      SUPERADMIN_LICENSE_SERVER: ${SUPERADMIN_LICENSE_SERVER:-https://license.eigenguard.uz}
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_dev_secret_min_32_chars_long_abcdef}
+      LICENSE_PUBLIC_KEY_PATH: /app/keys/superadmin_public.pem
+      TENANT_SUBDOMAIN_ROOT: ${TENANT_SUBDOMAIN_ROOT:-eigenguard.uz}
+      TENANT_HEADER: ${TENANT_HEADER:-X-EigenGuard-Tenant}
+      LICENSE_CHECK_INTERVAL_HOURS: ${LICENSE_CHECK_INTERVAL_HOURS:-24}
+      LICENSE_GRACE_PERIOD_DAYS: ${LICENSE_GRACE_PERIOD_DAYS:-7}
+      DEBUG: ${DEBUG:-false}
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/scripts:/app/scripts:ro
+      - ./backend/keys:/app/keys:ro
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks: [nexus_internal, nexus_public]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexus_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks: [nexus_public]
+
+  # Future: ONNX model server (custom AI training natijasi)
+  inference:
+    image: nginx:alpine
+    container_name: nexus_inference
+    restart: unless-stopped
+    networks: [nexus_internal]
+    profiles: ["ai"]
+
+volumes:
+  postgres_data:
+    name: nexus_postgres_data
+  redis_data:
+    name: nexus_redis_data
+
+networks:
+  nexus_internal:
+    driver: bridge
+  nexus_public:
+    driver: bridge

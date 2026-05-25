@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #app {
+  height: 100%;
+}
+body {
+  @apply bg-slate-950 text-slate-100;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(34, 211, 238, 0.13), transparent 32rem),
+    radial-gradient(circle at 88% 8%, rgba(244, 63, 94, 0.1), transparent 26rem),
+    linear-gradient(180deg, #020617 0%, #0f172a 46%, #020617 100%);
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+input, button, select, textarea {
+  outline: none;
+}
+::selection {
+  background: rgba(34, 211, 238, 0.35);
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border: 2px solid #020617;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+.eg-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+.eg-panel {
+  @apply rounded-lg border border-slate-800 bg-slate-900/70 shadow-2xl shadow-slate-950/40 backdrop-blur-xl;
+}
+.eg-input {
+  @apply w-full rounded border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 transition;
+}
+.eg-input:focus {
+  @apply border-cyan-300;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.14);
+}
+.glow-danger {
+  box-shadow: 0 0 32px rgba(239, 68, 68, 0.7);
+  animation: pulse-danger 1s ease-in-out infinite;
+}
+.glow-cyan {
+  box-shadow: 0 0 26px rgba(34, 211, 238, 0.22);
+}
+@keyframes pulse-danger {
+  0%, 100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.6); }
+  50% { box-shadow: 0 0 48px rgba(239, 68, 68, 0.95); }
+}
+@keyframes scan-line {
+  0% { transform: translateY(-100%); opacity: 0; }
+  12% { opacity: 0.8; }
+  100% { transform: translateY(420%); opacity: 0; }
+}
+.eg-scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  height: 22%;
+  background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.13), transparent);
+  animation: scan-line 4.8s linear infinite;
+  pointer-events: none;
+}

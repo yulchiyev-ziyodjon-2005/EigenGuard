@@ -1,0 +1,59 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.claude/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+nexus/.env
+eigen_guard/.env
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.venv*/
+venv/
+
+# Node / Vue
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+.gradle/
+
+# Native build artifacts
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+*.exe
+*.pdb
+
+# Generated app packages
+*.apk
+*.aab
+*.ipa
+*.msix
+*.docx
